@@ -1923,7 +1923,7 @@ function Chart(options, callback) {
 			crosshairsOptions = options.crosshairs,
 			crosshairs = [],
 			style = options.style,
-			shared = options.shared,
+			shared = chooseTooltipMode(options.shared, chart.series),
 			padding = pInt(style.padding),
 			boxOffLeft = borderWidth + padding, // off left/top position as IE can't
 				//properly handle negative positioned shapes
@@ -2320,7 +2320,7 @@ function Chart(options, callback) {
 				index = inverted ? e.chartY : e.chartX - plotLeft; // wtf?
 
 			// shared tooltip
-			if (tooltip && options.shared) {
+			if (tooltip && tooltip.shared) {
 				points = [];
 
 				// loop over all series and find the ones with points closest to the mouse

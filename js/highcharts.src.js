@@ -539,6 +539,31 @@ function destroyObjectProperties(obj) {
 }
 
 /**
+ * Choose the tooltip mode (shared/nonshared) based on the configuration and what type the series have.
+ * Default value of undefined now means true, unless the chart only contains pie or scatter-series.
+ * A return value of true means use shared mode.
+ */
+function chooseTooltipMode(sharedOption, seriesArray) {
+	var i;
+	// If the user specified an option, use it
+	if (defined(sharedOption)) {
+		return sharedOption;
+	}
+
+	// When the first non-pie/non-scatter series is found, decide to use shared tooltips
+	for (i = 0; i < seriesArray.length; i++) {
+		if (seriesArray[i].type !== 'pie' &&
+			seriesArray[i].type !== 'scatter') {
+			return true;
+		}
+	}
+
+	// If all series are pie or scatter series, return false,
+	// but not if the series are empty (i equals 0).
+	return i === 0;
+}
+
+/**
  * Path interpolation algorithm used across adapters
  */
 pathAnim = {
@@ -1158,7 +1183,7 @@ defaultOptions = {
 		borderRadius: 5,
 		//formatter: defaultFormatter,
 		shadow: true,
-		//shared: false,
+		//shared: Mixed, // docs, changed default value, false -> mixed. Pie/Scatter needs non-shared
 		snap: hasTouch ? 25 : 10,
 		style: {
 			color: '#333333',
@@ -5961,7 +5986,7 @@ function Chart(options, callback) {
 			crosshairsOptions = options.crosshairs,
 			crosshairs = [],
 			style = options.style,
-			shared = options.shared,
+			shared = chooseTooltipMode(options.shared, chart.series),
 			padding = pInt(style.padding),
 			boxOffLeft = borderWidth + padding, // off left/top position as IE can't
 				//properly handle negative positioned shapes
@@ -6358,7 +6383,7 @@ function Chart(options, callback) {
 				index = inverted ? e.chartY : e.chartX - plotLeft; // wtf?
 
 			// shared tooltip
-			if (tooltip && options.shared) {
+			if (tooltip && tooltip.shared) {
 				points = [];
 
 				// loop over all series and find the ones with points closest to the mouse

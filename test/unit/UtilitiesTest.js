@@ -237,3 +237,24 @@ UtilTest.prototype.testDestroyObjectProperties = function () {
 	assertUndefined('Property should be undefined', testObject.label);
 	assertUndefined('Property should be undefined', testObject.noDestroy);
 };
+
+/**
+ * Tests that the tooltip mode is correct.
+ */
+UtilTest.prototype.testChooseTooltipMode = function () {
+	var optionDefault,
+		optionTrue = true,
+		optionFalse = false,
+		seriesAllNonShared = [{type: 'scatter'}, {type: 'pie'}, {type: 'pie'}],
+		seriesOnePie = [{type: 'bar'}, {type: 'column'}, {type: 'pie'}],
+		seriesNoPie = [{type: 'bar'}, {type: 'column'}, {type: 'scatter'}],
+		seriesEmpty = [];
+
+	assertTrue('Shared tooltip to true if set.', chooseTooltipMode(optionTrue, seriesOnePie));
+	assertFalse('Shared tooltip to false if set.', chooseTooltipMode(optionFalse, seriesOnePie));
+
+	assertTrue('Shared tooltip true as default.', chooseTooltipMode(optionDefault, seriesNoPie));
+	assertTrue('Shared tooltip false if all are pies.', chooseTooltipMode(optionDefault, seriesOnePie));
+	assertFalse('Shared tooltip false if all are pies.', chooseTooltipMode(optionDefault, seriesAllNonShared));
+	assertTrue('Shared tooltip true if series empty.', chooseTooltipMode(optionDefault, seriesEmpty));
+};

@@ -305,7 +305,7 @@ defaultOptions = {
 		borderRadius: 5,
 		//formatter: defaultFormatter,
 		shadow: true,
-		//shared: false,
+		//shared: Mixed, // docs, changed default value, false -> mixed. Pie/Scatter needs non-shared
 		snap: hasTouch ? 25 : 10,
 		style: {
 			color: '#333333',

@@ -258,3 +258,49 @@ UtilTest.prototype.testChooseTooltipMode = function () {
 	assertFalse('Shared tooltip false if all are pies.', chooseTooltipMode(optionDefault, seriesAllNonShared));
 	assertTrue('Shared tooltip true if series empty.', chooseTooltipMode(optionDefault, seriesEmpty));
 };
+
+/**
+ * Tests that the getEnableMouseTracker function works and selects to disable the mouse tracker.
+ */
+UtilTest.prototype.testGetEnableMouseTrackerDefaults = function () {
+	var optionDefault,
+		optionTrue = true,
+		optionFalse = false,
+		tooltipShared = {shared: optionTrue},
+		seriesMouseTrackingDefault = {type: 'bar', enableMouseTracking: optionDefault},
+		seriesMouseTrackingOn = {type: 'bar', enableMouseTracking: optionTrue},
+		seriesMouseTrackingOff = {type: 'bar', enableMouseTracking: optionFalse};
+
+	assertTrue('Enable mouseTracker if set to true.', getEnableMouseTracker(seriesMouseTrackingOn, tooltipShared));
+	assertFalse('Disable mouseTracker if set to false.', getEnableMouseTracker(seriesMouseTrackingOff, tooltipShared));
+	assertFalse('Disable mouseTracker if set to default.', getEnableMouseTracker(seriesMouseTrackingDefault, tooltipShared));
+};
+
+/**
+ * Tests that the getEnableMouseTracker function works when shared tooltips are used.
+ */
+UtilTest.prototype.testGetEnableMouseTrackerSharedTooltip = function () {
+	var optionDefault,
+		optionTrue = true,
+		optionFalse = false,
+		tooltipShared = {shared: optionTrue},
+		tooltipNonShared = {shared: optionFalse},
+		noTooltip = optionDefault,
+		seriesMouseTrackingDefault = {type: 'bar', enableMouseTracking: optionDefault};
+
+	assertFalse('Disable mouseTracker if no tooltip.', getEnableMouseTracker(seriesMouseTrackingDefault, noTooltip));
+	assertFalse('Disable mouseTracker if shared tooltips.', getEnableMouseTracker(seriesMouseTrackingDefault, tooltipShared));
+	assertTrue('Enable mouseTracker if non-shared tooltips.', getEnableMouseTracker(seriesMouseTrackingDefault, tooltipNonShared));
+};
+
+/**
+ * Tests that the getEnableMouseTracker function works and selects to disable the mouse tracker.
+ */
+UtilTest.prototype.testGetEnableMouseTrackerPlotOptionEvents = function () {
+	var tooltipShared = {shared: true},
+		seriesNoEvents = {point: {events: {}}},
+		seriesEvents = {point: {events: {click: function () {alert('click');}}}};
+
+	assertFalse('Disable mouseTracker if no events.', getEnableMouseTracker(seriesNoEvents, tooltipShared));
+	assertTrue('Enable mouseTracker if there are events.', getEnableMouseTracker(seriesEvents, tooltipShared));
+};

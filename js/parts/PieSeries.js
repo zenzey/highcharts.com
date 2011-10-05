@@ -279,7 +279,7 @@ var PieSeries = extendClass(Series, {
 		this.drawPoints();
 
 		// draw the mouse tracking area
-		if (series.options.enableMouseTracking !== false) {
+		if (getRenderMouseTracker(series.options, series.chart.tooltip)) {
 			series.drawTracker();
 		}
 

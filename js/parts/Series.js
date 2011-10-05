@@ -1528,7 +1528,7 @@ Series.prototype = {
 		series.drawPoints();
 
 		// draw the mouse tracking area
-		if (series.options.enableMouseTracking !== false) {
+		if (getEnableMouseTracker(series.options, series.chart.tooltip)) {
 			series.drawTracker();
 		}
 

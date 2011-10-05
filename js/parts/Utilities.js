@@ -450,3 +450,33 @@ function chooseTooltipMode(sharedOption, seriesArray) {
 	// but not if the series are empty (i equals 0).
 	return i === 0;
 }
+
+/**
+ * Returns true if the mouse tracker should be enabled and rendered.
+ */
+function getEnableMouseTracker(seriesOptions, tooltip) {
+	var property;
+
+	// If the user specified an option, use that option
+	if (defined(seriesOptions.enableMouseTracking)) {
+		return seriesOptions.enableMouseTracking;
+	}
+
+	// If the tooltip is not shared, we must use the mouse tracker
+	if (tooltip && !tooltip.shared) {
+		return true;
+	}
+
+	// Else compute a default which tries to avoid enabling the mousetracker as much as possible.
+	// Enable it if there are event handlers to point events.
+	if (seriesOptions.point && seriesOptions.point.events) {
+		// If there are event handlers registered, we need mouse tracking.
+		for (property in seriesOptions.point.events) {
+			if (seriesOptions.point.events.hasOwnProperty(property)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}

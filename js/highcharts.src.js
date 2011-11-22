@@ -2192,7 +2192,11 @@ SVGElement.prototype = {
 	safeRemoveChild: function (element) {
 		var parentNode = element.parentNode;
 		if (parentNode) {
-			parentNode.removeChild(element);
+			if (isIE) {
+				discardElement(element);
+			} else {
+				parentNode.removeChild(element);
+			}
 		}
 	},
 
@@ -2409,7 +2413,11 @@ SVGRenderer.prototype = {
 
 		// remove old text
 		while (i--) {
-			textNode.removeChild(childNodes[i]);
+			if (isIE) {
+				discardElement(childNodes[i]);
+			} else {
+				textNode.removeChild(childNodes[i]);
+			}
 		}
 
 		if (width && !wrapper.added) {
@@ -2426,6 +2434,7 @@ SVGRenderer.prototype = {
 				if (span !== '' || spans.length === 1) {
 					var attributes = {},
 						tspan = doc.createElementNS(SVG_NS, 'tspan');
+
 					if (styleRegex.test(span)) {
 						attr(
 							tspan,
@@ -3377,19 +3386,6 @@ var VMLElement = extendClass(SVGElement, {
 		css(wrapper.element, styles);
 
 		return wrapper;
-	},
-
-	/**
-	 * Removes a child either by removeChild or move to garbageBin.
-	 * Issue 490; in VML removeChild results in Orphaned nodes according to sIEve, discardElement does not.
-	 */
-	safeRemoveChild: function (element) {
-		// discardElement will detach the node from its parent before attaching it
-		// to the garbage bin. Therefore it is important that the node is attached and have parent.
-		var parentNode = element.parentNode;
-		if (parentNode) {
-			discardElement(element);
-		}
 	},
 
 	/**

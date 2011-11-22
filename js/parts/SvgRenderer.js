@@ -651,7 +651,11 @@ SVGElement.prototype = {
 	safeRemoveChild: function (element) {
 		var parentNode = element.parentNode;
 		if (parentNode) {
-			parentNode.removeChild(element);
+			if (isIE) {
+				discardElement(element);
+			} else {
+				parentNode.removeChild(element);
+			}
 		}
 	},
 
@@ -868,7 +872,11 @@ SVGRenderer.prototype = {
 
 		// remove old text
 		while (i--) {
-			textNode.removeChild(childNodes[i]);
+			if (isIE) {
+				discardElement(childNodes[i]);
+			} else {
+				textNode.removeChild(childNodes[i]);
+			}
 		}
 
 		if (width && !wrapper.added) {
@@ -885,6 +893,7 @@ SVGRenderer.prototype = {
 				if (span !== '' || spans.length === 1) {
 					var attributes = {},
 						tspan = doc.createElementNS(SVG_NS, 'tspan');
+
 					if (styleRegex.test(span)) {
 						attr(
 							tspan,

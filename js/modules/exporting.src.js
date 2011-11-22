@@ -187,14 +187,16 @@ extend(Chart.prototype, {
 			pointMarker,
 			options = merge(chart.options, additionalOptions); // copy the options and add extra options
 
+		function getBBoxExtended() {
+			return HC.Renderer.prototype.Element.prototype.getBBox.apply({ element: this });
+		}
+
 		// IE compatibility hack for generating SVG content that it doesn't really understand
 		if (!doc.createElementNS) {
 			/*jslint unparam: true*//* allow unused parameter ns in function below */
 			doc.createElementNS = function (ns, tagName) {
 				var elem = doc.createElement(tagName);
-				elem.getBBox = function () {
-					return HC.Renderer.prototype.Element.prototype.getBBox.apply({ element: elem });
-				};
+				elem.getBBox = getBBoxExtended;
 				return elem;
 			};
 			/*jslint unparam: false*/
@@ -288,6 +290,7 @@ extend(Chart.prototype, {
 
 		// free up memory
 		options = null;
+
 		chartCopy.destroy();
 		discardElement(sandbox);
 

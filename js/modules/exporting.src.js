@@ -37,6 +37,7 @@ var HC = Highcharts,
 	ABSOLUTE = 'absolute',
 	PX = 'px',
 	UNDEFINED,
+	docCreateElementNSAdded,
 	defaultOptions = HC.getOptions();
 
 	// Add language
@@ -194,6 +195,7 @@ extend(Chart.prototype, {
 		// IE compatibility hack for generating SVG content that it doesn't really understand
 		if (!doc.createElementNS) {
 			/*jslint unparam: true*//* allow unused parameter ns in function below */
+			docCreateElementNSAdded = true;
 			doc.createElementNS = function (ns, tagName) {
 				var elem = doc.createElement(tagName);
 				elem.getBBox = getBBoxExtended;
@@ -685,6 +687,11 @@ extend(Chart.prototype, {
 
 			// Destroy the div by moving to garbage bin
 			discardElement(elem);
+		}
+
+		// Remove the createElementNS function added in getSVG above.
+		if (docCreateElementNSAdded) {
+			doc.createElementNS = null;
 		}
 	}
 });

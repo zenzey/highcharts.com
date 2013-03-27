@@ -1,0 +1,14 @@
+{
+  "name": "highcharts.com",
+  "repo": "zenzey/highcharts.com",
+  "description": "fork of highcharts.com",
+  "version": "3.0.0",
+  "keywords": [],
+  "dependencies": {},
+  "development": {},
+  "license": "MIT",
+  "scripts": [
+    "index.js",
+    "js/highstock.src.js"
+  ]
+}

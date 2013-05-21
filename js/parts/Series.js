@@ -267,7 +267,7 @@ Point.prototype = {
 		// Insert options for valueDecimals, valuePrefix, and valueSuffix
 		var series = this.series,
 			seriesTooltipOptions = series.tooltipOptions,
-			valueDecimals = seriesTooltipOptions.valueDecimals,
+			valueDecimals = pick(seriesTooltipOptions.valueDecimals, ''),
 			valuePrefix = seriesTooltipOptions.valuePrefix || '',
 			valueSuffix = seriesTooltipOptions.valueSuffix || '';
 			
@@ -277,9 +277,7 @@ Point.prototype = {
 			if (valuePrefix || valueSuffix) {
 				pointFormat = pointFormat.replace(key + '}', valuePrefix + key + '}' + valueSuffix);
 			}
-			if (isNumber(valueDecimals)) {
-				pointFormat = pointFormat.replace(key + '}', key + ':,.' + valueDecimals + 'f}');
-			}
+			pointFormat = pointFormat.replace(key + '}', key + ':,.' + valueDecimals + 'f}');
 		});
 		
 		return format(pointFormat, {
@@ -670,7 +668,7 @@ Series.prototype = {
 
 				// The series needs an X and an Y axis
 				if (!series[AXIS]) {
-					error(17, true);
+					error(18, true);
 				}
 
 			});
@@ -1430,19 +1428,25 @@ Series.prototype = {
 		var series = this,
 			tooltipOptions = series.tooltipOptions,
 			xDateFormat = tooltipOptions.xDateFormat,
+			dateTimeLabelFormats = tooltipOptions.dateTimeLabelFormats,
 			xAxis = series.xAxis,
 			isDateTime = xAxis && xAxis.options.type === 'datetime',
 			headerFormat = tooltipOptions.headerFormat,
+			closestPointRange = xAxis && xAxis.closestPointRange,
 			n;
 			
 		// Guess the best date format based on the closest point distance (#568)
 		if (isDateTime && !xDateFormat) {
-			for (n in timeUnits) {
-				if (timeUnits[n] >= xAxis.closestPointRange) {
-					xDateFormat = tooltipOptions.dateTimeLabelFormats[n];
-					break;
-				}	
-			}		
+			if (closestPointRange) {
+				for (n in timeUnits) {
+					if (timeUnits[n] >= closestPointRange) {
+						xDateFormat = dateTimeLabelFormats[n];
+						break;
+					}
+				}
+			} else {
+				xDateFormat = dateTimeLabelFormats.day;
+			}
 		}
 		
 		// Insert the header date format if any
@@ -1632,7 +1636,7 @@ Series.prototype = {
 				graphic = point.graphic;
 				pointMarkerOptions = point.marker || {};
 				enabled = (seriesMarkerOptions.enabled && pointMarkerOptions.enabled === UNDEFINED) || pointMarkerOptions.enabled;
-				isInside = chart.isInsidePlot(plotX, plotY, chart.inverted);
+				isInside = chart.isInsidePlot(mathRound(plotX), plotY, chart.inverted); // #1858
 				
 				// only draw the point if y is defined
 				if (enabled && plotY !== UNDEFINED && !isNaN(plotY) && point.y !== null) {
@@ -1768,7 +1772,7 @@ Series.prototype = {
 				normalOptions.radius = 0;
 			}
 			
-			if (point.negative) {
+			if (point.negative && negativeColor) {
 				point.color = point.fillColor = negativeColor;
 			}
 			
@@ -1821,7 +1825,7 @@ Series.prototype = {
 				);
 
 				// Force the fill to negativeColor on markers
-				if (point.negative && seriesOptions.marker) {
+				if (point.negative && seriesOptions.marker && negativeColor) {
 					pointAttr[NORMAL_STATE].fill = pointAttr[HOVER_STATE].fill = pointAttr[SELECT_STATE].fill = 
 						series.convertAttribs({ fillColor: negativeColor }).fill;
 				}
@@ -2262,6 +2266,8 @@ Series.prototype = {
 			translatedThreshold,
 			posAttr,
 			negAttr,
+			graph = this.graph,
+			area = this.area,
 			posClip = this.posClip,
 			negClip = this.negClip,
 			chartWidth = chart.chartWidth,
@@ -2270,7 +2276,7 @@ Series.prototype = {
 			above,
 			below;
 		
-		if (negativeColor && this.graph) {
+		if (negativeColor && (graph || area)) {
 			translatedThreshold = mathCeil(this.yAxis.len - this.yAxis.translate(options.threshold || 0));
 			above = {
 				x: 0,
@@ -2312,14 +2318,17 @@ Series.prototype = {
 				posClip.animate(posAttr);
 				negClip.animate(negAttr);
 			} else {
+				
 				this.posClip = posClip = renderer.clipRect(posAttr);
-				this.graph.clip(posClip);
-				
 				this.negClip = negClip = renderer.clipRect(negAttr);
-				this.graphNeg.clip(negClip);
 				
-				if (this.area) {
-					this.area.clip(posClip);
+				if (graph) {
+					graph.clip(posClip);
+					this.graphNeg.clip(negClip);	
+				}
+				
+				if (area) {
+					area.clip(posClip);
 					this.areaNeg.clip(negClip);
 				} 
 			} 
@@ -2332,6 +2341,11 @@ Series.prototype = {
 	invertGroups: function () {
 		var series = this,
 			chart = series.chart;
+
+		// Pie, go away (#1736)
+		if (!series.xAxis) {
+			return;
+		}
 		
 		// A fixed size is needed for inversion to work
 		function setInvert() {			
@@ -2386,7 +2400,6 @@ Series.prototype = {
 			scaleX: 1, // #1623
 			scaleY: 1
 		});
-		
 		return group;
 		
 	},
@@ -2433,8 +2446,8 @@ Series.prototype = {
 		// cache attributes for shapes
 		series.getAttribs();
 
-		// SVGRenderer needs to know this before drawing elements (#1089)
-		group.inverted = chart.inverted;
+		// SVGRenderer needs to know this before drawing elements (#1089, #1795)
+		group.inverted = series.isCartesian ? chart.inverted : false;
 		
 		// draw the graph if any
 		if (series.drawGraph) {

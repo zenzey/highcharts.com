@@ -319,7 +319,13 @@ SVGElement.prototype = {
 		});
 
 		wrapper.attr({
-			d: wrapper.renderer.symbols[wrapper.symbolName](wrapper.x, wrapper.y, wrapper.width, wrapper.height, wrapper)
+			d: wrapper.renderer.symbols[wrapper.symbolName](
+				wrapper.x, 
+				wrapper.y, 
+				wrapper.width, 
+				wrapper.height, 
+				wrapper
+			)
 		});
 	},
 
@@ -553,19 +559,17 @@ SVGElement.prototype = {
 			shadows = wrapper.shadows;
 
 		// apply translate
-		if (translateX || translateY) {
-			css(elem, {
-				marginLeft: translateX,
-				marginTop: translateY
-			});
-			if (shadows) { // used in labels/tooltip
-				each(shadows, function (shadow) {
-					css(shadow, {
-						marginLeft: translateX + 1,
-						marginTop: translateY + 1
-					});
+		css(elem, {
+			marginLeft: translateX,
+			marginTop: translateY
+		});
+		if (shadows) { // used in labels/tooltip
+			each(shadows, function (shadow) {
+				css(shadow, {
+					marginLeft: translateX + 1,
+					marginTop: translateY + 1
 				});
-			}
+			});
 		}
 
 		// apply inversion
@@ -683,7 +687,7 @@ SVGElement.prototype = {
 			scaleY = wrapper.scaleY,
 			inverted = wrapper.inverted,
 			rotation = wrapper.rotation,
-			transform = [];
+			transform;
 
 		// flipping affects translate as adjustment for flipping around the group's axis
 		if (inverted) {
@@ -691,10 +695,9 @@ SVGElement.prototype = {
 			translateY += wrapper.attr('height');
 		}
 
-		// apply translate
-		if (translateX || translateY) {
-			transform.push('translate(' + translateX + ',' + translateY + ')');
-		}
+		// Apply translate. Nearly all transformed elements have translation, so instead
+		// of checking for translate = 0, do it always (#1767, #1846).
+		transform = ['translate(' + translateX + ',' + translateY + ')'];
 
 		// apply rotation
 		if (inverted) {
@@ -844,8 +847,8 @@ SVGElement.prototype = {
 				width = bBox.width;
 				height = bBox.height;
 				
-				// Workaround for wrong bounding box in IE9 and IE10 (#1101, #1505)
-				if (isIE && styles && styles.fontSize === '11px' && height.toPrecision(3) === 22.7) {
+				// Workaround for wrong bounding box in IE9 and IE10 (#1101, #1505, #1669)
+				if (isIE && styles && styles.fontSize === '11px' && height.toPrecision(3) === '22.7') {
 					bBox.height = height = 14;
 				}
 			
@@ -1710,6 +1713,7 @@ SVGRenderer.prototype = {
 					x: x,
 					y: y
 				});
+			obj.isImg = true;
 
 			if (imageSize) {
 				centerImage(obj, imageSize);
@@ -2233,10 +2237,12 @@ SVGRenderer.prototype = {
 				}
 	
 				// apply the box attributes
-				box.attr(merge({
-					width: wrapper.width,
-					height: wrapper.height
-				}, deferredAttr));
+				if (!box.isImg) { // #1630
+					box.attr(merge({
+						width: wrapper.width,
+						height: wrapper.height
+					}, deferredAttr));
+				}
 				deferredAttr = null;
 			}
 		}
@@ -2399,7 +2405,7 @@ SVGRenderer.prototype = {
 				if (styles) {
 					var textStyles = {};
 					styles = merge(styles); // create a copy to avoid altering the original object (#537)
-					each(['fontSize', 'fontWeight', 'fontFamily', 'color', 'lineHeight', 'width'], function (prop) {
+					each(['fontSize', 'fontWeight', 'fontFamily', 'color', 'lineHeight', 'width', 'textDecoration'], function (prop) {
 						if (styles[prop] !== UNDEFINED) {
 							textStyles[prop] = styles[prop];
 							delete styles[prop];

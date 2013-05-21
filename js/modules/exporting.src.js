@@ -42,6 +42,7 @@ var Chart = Highcharts.Chart,
 
 	// Add language
 	extend(defaultOptions.lang, {
+		printChart: 'Print chart',
 		downloadPNG: 'Download PNG image',
 		downloadJPEG: 'Download JPEG image',
 		downloadPDF: 'Download PDF document',
@@ -104,7 +105,7 @@ defaultOptions.exporting = {
 			symbol: 'menu',
 			_titleKey: 'contextButtonTitle',
 			menuItems: [{
-				text: 'Print chart',
+				textKey: 'printChart',
 				onclick: function () {
 					this.print();
 				}
@@ -242,8 +243,7 @@ extend(Chart.prototype, {
 			height: sourceHeight
 		});
 		options.exporting.enabled = false; // hide buttons in print
-		options.chart.plotBackgroundImage = null; // the converter doesn't handle images
-
+		
 		// prepare for replicating the chart
 		options.series = [];
 		each(chart.series, function (serie) {
@@ -332,18 +332,18 @@ extend(Chart.prototype, {
 	 * @param {Object} chartOptions Additional chart options for the SVG representation of the chart
 	 */
 	exportChart: function (options, chartOptions) {
-		
 		options = options || {};
 		
 		var chart = this,
+			chartExportingOptions = chart.options.exporting,
 			svg = chart.getSVG(merge(
 				{ chart: { borderRadius: 0 } },
-				chart.options.exporting.chartOptions,
+				chartExportingOptions,
 				chartOptions, 
 				{
 					exporting: {
-						sourceWidth: options.sourceWidth, // docs: option and parameter in exportChart()
-						sourceHeight: options.sourceHeight // docs
+						sourceWidth: options.sourceWidth || chartExportingOptions.sourceWidth, // docs: option and parameter in exportChart()
+						sourceHeight: options.sourceHeight || chartExportingOptions.sourceHeight // docs
 					}
 				}
 			));
@@ -464,6 +464,7 @@ extend(Chart.prototype, {
 				if (button) {
 					button.setState(0);
 				}
+				chart.openMenu = false;
 			};
 
 			// Hide the menu some time after mouse leave (#1357)
@@ -525,6 +526,7 @@ extend(Chart.prototype, {
 		}
 
 		css(menu, menuStyle);
+		chart.openMenu = true;
 	},
 
 	/**
@@ -624,7 +626,7 @@ extend(Chart.prototype, {
 		button.add()
 			.align(extend(btnOptions, {
 				width: button.width,
-				x: buttonOffset
+				x: Highcharts.pick(btnOptions.x, buttonOffset) // #1654
 			}), true, 'spacingBox');
 
 		buttonOffset += (button.width + btnOptions.buttonSpacing) * (btnOptions.align === 'right' ? -1 : 1);
@@ -644,9 +646,12 @@ extend(Chart.prototype, {
 		// Destroy the extra buttons added
 		for (i = 0; i < chart.exportSVGElements.length; i++) {
 			elem = chart.exportSVGElements[i];
+			
 			// Destroy and null the svg/vml elements
-			elem.onclick = elem.ontouchstart = null;
-			chart.exportSVGElements[i] = elem.destroy();
+			if (elem) { // #1822
+				elem.onclick = elem.ontouchstart = null;
+				chart.exportSVGElements[i] = elem.destroy();
+			}
 		}
 
 		// Destroy the divs for the menu

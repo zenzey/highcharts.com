@@ -11,3 +11,8 @@
 /.pydevproject
 /highcharts.com.sublime-project
 /highcharts.com.sublime-workspace
+/highcharts.sublime-workspace
+/highcharts.com
+*sublime*
+/exporting-server/java/highcharts-export/src/main/resources/presets/
+/exporting-server/java/highcharts-export/src/main/webapp/META-INF/

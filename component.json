@@ -4,7 +4,9 @@
   "description": "fork of highcharts.com",
   "version": "3.0.0",
   "keywords": [],
-  "dependencies": {},
+  "dependencies": {
+    "component/jquery": "*"
+  },
   "development": {},
   "license": "MIT",
   "scripts": [

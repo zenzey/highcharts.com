@@ -56,6 +56,7 @@ RangeSelector.prototype = {
 	 */
 	clickButton: function (i, rangeOptions, redraw) {
 		var rangeSelector = this,
+			selected = rangeSelector.selected,
 			chart = rangeSelector.chart,
 			buttons = rangeSelector.buttons,
 			baseAxis = chart.xAxis[0],
@@ -70,7 +71,7 @@ RangeSelector.prototype = {
 			dataMin = ((defined(baseDataMin) && defined(navDataMin)) ? mathMin : pick)(baseDataMin, navDataMin),
 			dataMax = ((defined(baseDataMax) && defined(navDataMax)) ? mathMax : pick)(baseDataMax, navDataMax),
 			newMin,
-			newMax = baseAxis && mathMin(extremes.max, dataMax),
+			newMax = baseAxis && mathMin(extremes.max, pick(dataMax, extremes.max)), // #1568
 			now,
 			date = new Date(newMax),
 			type = rangeOptions.type,
@@ -88,7 +89,8 @@ RangeSelector.prototype = {
 				hour: 3600 * 1000,
 				day: 24 * 3600 * 1000,
 				week: 7 * 24 * 3600 * 1000
-			};
+			},
+			timeName;
 
 		if (dataMin === null || dataMax === null || // chart has no data, base series is removed
 				i === rangeSelector.selected) { // same button is clicked twice
@@ -98,10 +100,13 @@ RangeSelector.prototype = {
 		if (fixedTimes[type]) {
 			range = fixedTimes[type] * count;
 			newMin = mathMax(newMax - range, dataMin);
-		} else if (type === 'month') {
-			date.setMonth(date.getMonth() - count);
-			newMin = mathMax(date.getTime(), dataMin);
-			range = 30 * 24 * 3600 * 1000 * count;
+		
+		} else if (type === 'month' || type === 'year') {
+			timeName = { month: 'Month', year: 'FullYear'}[type];
+			date['set' + timeName](date['get' + timeName]() - count);
+			newMin = mathMax(date.getTime(), pick(dataMin, Number.MIN_VALUE)); // #1568
+			range = { month: 30, year: 365 }[type] * 24 * 3600 * 1000 * count;
+		
 		} else if (type === 'ytd') {
 
 			// On user clicks on the buttons, or a delayed action running from the beforeRender 
@@ -136,19 +141,21 @@ RangeSelector.prototype = {
 				});
 				return;
 			}
-		} else if (type === 'year') {
-			date.setFullYear(date.getFullYear() - count);
-			newMin = mathMax(dataMin, date.getTime());
-			range = 365 * 24 * 3600 * 1000 * count;
 		} else if (type === 'all' && baseAxis) {
 			newMin = dataMin;
 			newMax = dataMax;
 		}
 
-		// mark the button pressed
+		// Deselect previous button
+		if (buttons[selected]) {
+			buttons[selected].setState(0);
+		}
+		// Select this button
 		if (buttons[i]) {
 			buttons[i].setState(2);
 		}
+
+		chart.fixedRange = range;
 
 		// update the chart
 		if (!baseAxis) { // axis not yet instanciated
@@ -240,13 +247,12 @@ RangeSelector.prototype = {
 		// normalize the pressed button whenever a new range is selected
 		addEvent(chart, 'load', function () {
 			addEvent(chart.xAxis[0], 'afterSetExtremes', function () {
-				if (this.fixedRange !== this.max - this.min) {
+				if (chart.fixedRange !== this.max - this.min) {
 					if (buttons[rangeSelector.selected] && !chart.renderer.forExport) {
 						buttons[rangeSelector.selected].setState(0);
 					}
-					rangeSelector.selected = null;
+					rangeSelector.selected = chart.fixedRange = null;
 				}
-				this.fixedRange = null;
 			});
 		});
 	},
@@ -259,7 +265,7 @@ RangeSelector.prototype = {
 	setInputValue: function (name, time) {
 		var options = this.chart.options.rangeSelector;
 
-		if (time) {
+		if (defined(time)) {
 			this[name + 'Input'].HCTime = time;
 		}
 		
@@ -355,7 +361,7 @@ RangeSelector.prototype = {
 		// handle changes in the input boxes
 		input.onchange = function () {
 			var inputValue = input.value,
-				value = Date.parse(inputValue),
+				value = (options.inputDateParser || Date.parse)(inputValue),
 				extremes = chart.xAxis[0].getExtremes();
 
 			// If the value isn't parsed directly to a value by the browser's Date.parse method,
@@ -395,12 +401,13 @@ RangeSelector.prototype = {
 	 * @param {Number} max X axis maximum
 	 */
 	render: function (min, max) {
+
 		var rangeSelector = this,
 			chart = rangeSelector.chart,
 			renderer = chart.renderer,
 			container = chart.container,
 			chartOptions = chart.options,
-			navButtonOptions = chartOptions.exporting && chart.options.navigation.buttonOptions, 
+			navButtonOptions = chartOptions.exporting && chartOptions.navigation && chartOptions.navigation.buttonOptions, 
 			options = chartOptions.rangeSelector,
 			buttons = rangeSelector.buttons,
 			lang = defaultOptions.lang,
